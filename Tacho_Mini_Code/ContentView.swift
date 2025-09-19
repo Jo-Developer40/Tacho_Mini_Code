@@ -125,7 +125,7 @@ struct GaugeBase: View {
 
                     // Center Hub
                 Circle()
-                    .fill(AnyShapeStyle(style.hubFill))
+                    .fill(AnyShapeStyle(style.needleFill))
                     .frame(width: style.hubSize, height: style.hubSize)
                     .overlay(Circle().stroke(style.hubStroke, lineWidth: 2))
             }
@@ -293,13 +293,23 @@ struct CountdownControls: View {
             Button(action: {
                 synchronize()
             }) {
-                Label("Sync", systemImage: "arrow.clockwise")
+                Label("Start", systemImage: "record.circle")
+                    .frame(width: 80, height: 80)
+                    .background(
+                        LinearGradient(colors: [Color.blue, Color.cyan], startPoint: .top, endPoint: .bottom)
+                    )
+                    .clipShape(Circle())
+                    .foregroundColor(.white)
+                    .shadow(radius: 5)
+
+                /*Label("Sync", systemImage: "arrow.clockwise")
                     .frame(minWidth: 80, minHeight: 20)
                     .font(.headline)
                     .padding()
                     .background(Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(10)
+                 */
             }
         }
     }
@@ -340,17 +350,19 @@ struct SpeedOverlayA: View {
             rings: AnyView(
                 ZStack {
                     Circle().inset(by: 14)
-                        .trim(from: 0.15, to: 0.85)
-                        .stroke(AngularGradient(colors: [Color.cyan, Color.blue, Color.cyan],
-                                                center: .center),
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .opacity(0.35)
+                        .trim(from: 0.17, to: 0.437) // Erstes Segment (1/3 des Kreises)
+                        .stroke(Color.blue, style: StrokeStyle(lineWidth: 8, lineCap: .butt))
+                        .rotationEffect(.degrees(89))
 
-                    Circle().inset(by: 28)
-                        .trim(from: 0.15, to: 0.85)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 16)
-                        .rotationEffect(.degrees(-90))
+                    Circle().inset(by: 14)
+                        .trim(from: 0.437, to: 0.637) // Zweites Segment (1/3 des Kreises)
+                        .stroke(Color.green, style: StrokeStyle(lineWidth: 8, lineCap: .butt))
+                        .rotationEffect(.degrees(89))
+
+                    Circle().inset(by: 14)
+                        .trim(from: 0.737, to: 0.87) // Drittes Segment (1/3 des Kreises)
+                        .stroke(Color.red, style: StrokeStyle(lineWidth: 8, lineCap: .butt))
+                        .rotationEffect(.degrees(89))
                 }
             ),
             tickColor: .white.opacity(0.85),
