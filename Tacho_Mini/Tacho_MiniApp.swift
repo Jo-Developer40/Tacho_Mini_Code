@@ -11,7 +11,7 @@ import SwiftUI
 struct Tacho_Mini_CodeApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
         }
     }
 }
