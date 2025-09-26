@@ -11,11 +11,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		381BC6512E7DC47600B6780D /* extensions */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = extensions;
-			sourceTree = "<group>";
-		};
 		38B5D2B42E7C8455003E253B /* Tacho_Mini */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Tacho_Mini;
@@ -39,7 +34,6 @@
 			children = (
 				38B5D2B42E7C8455003E253B /* Tacho_Mini */,
 				38B5D2B32E7C8455003E253B /* Products */,
-				381BC6512E7DC47600B6780D /* extensions */,
 			);
 			sourceTree = "<group>";
 		};
@@ -67,7 +61,6 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				381BC6512E7DC47600B6780D /* extensions */,
 				38B5D2B42E7C8455003E253B /* Tacho_Mini */,
 			);
 			name = Tacho_Mini;
