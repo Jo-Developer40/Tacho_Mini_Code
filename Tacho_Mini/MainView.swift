@@ -13,26 +13,27 @@ import Combine
     /// Berechnet den Winkel für die Nadel basierend auf der Geschwindigkeit
 func angle(for speed: Double, maxSpeed: Double,
            start: Angle = .degrees(-210), end: Angle = .degrees(30)) -> Angle {
-    let clamped = max(0, min(speed, maxSpeed)) // Begrenzung der Geschwindigkeit
-    let span = end.degrees - start.degrees // Gesamtwinkelspanne
-    let rel = clamped / maxSpeed // Verhältnis der Geschwindigkeit zur Maximalgeschwindigkeit
-    return .degrees(start.degrees + rel * span) // Berechneter Winkel
+    let clamped = max(0, min(speed, maxSpeed))
+    let span = end.degrees - start.degrees
+    let rel = clamped / maxSpeed
+    return .degrees(start.degrees + rel * span)
 }
 
     /// Zeichnet Hintergrund, Skala, Zeiger und digitale Anzeige
 struct GaugeBase: View {
+    @Environment(\.colorScheme) private var colorScheme
     var speed: Double // Aktuelle Geschwindigkeit
     var maxSpeed: Double // Maximale Geschwindigkeit
-    var style: GaugeStyle = createGaugeStyle()
-    var isDarkMode: Bool // Darkmodus berücksichtigen
+    var gaugeStyleType: String // Typ des GaugeStyles
 
     var body: some View {
+        let style = createGaugeStyle(for: gaugeStyleType, colorScheme: colorScheme)
         GeometryReader { geo in
             let size = min(geo.size.width, geo.size.height)
             let radius = size * 0.48 // Radius des Tachos
             ZStack {
                 Circle()
-                    .fill(isDarkMode ? AnyShapeStyle(Color.black) : AnyShapeStyle(style.backgroundFill))
+                    .fill(style.backgroundFill)
                     .overlay(
                         Circle().stroke(style.outerStroke, lineWidth: style.outerStrokeWidth)
                             .blur(radius: style.outerGlow)
@@ -40,58 +41,70 @@ struct GaugeBase: View {
                     )
                     // Farbige Ringe/Dekoration
                 style.rings
+
                     // Skala und Ticks
                 Canvas { ctx, sz in
                     let center = CGPoint(x: sz.width/2, y: sz.height/2) // Mittelpunkt des Tachos
                     let minTickLen = radius * 0.06 // Länge der kleinen Ticks
-                    let midTickLen = radius * 0.09 // Länge der mittleren Ticks
                     let majTickLen = radius * 0.12 // Länge der großen Ticks
-
                     let start = -210.0 * .pi/180 // Startwinkel in Radiant
                     let end   =  30.0 * .pi/180 // Endwinkel in Radiant
                     let totalMinor = Int(maxSpeed / 10) // Anzahl der kleinen Ticks
                     let totalMajor = Int(maxSpeed / 20) // Anzahl der großen Ticks
-                                                        // Zeichnet kleine und mittlere Ticks
+
+                        // Zeichnet kleine und große Ticks
                     for i in 0...totalMinor {
                         let t = Double(i) / Double(totalMinor)
                         let a = start + t * (end - start) // Winkel für den Tick
-                        let isMid = (i % 2 == 0) // Prüft, ob es ein mittlerer Tick ist
-                        let len = isMid ? midTickLen : minTickLen
+                        let isMajor = (i % (totalMinor / totalMajor) == 0) // Prüft, ob es ein großer Tick ist
+
+                        let len = isMajor ? majTickLen : minTickLen
                         let p1 = CGPoint(x: center.x + (radius - len) * cos(a),
                                          y: center.y + (radius - len) * sin(a))
                         let p2 = CGPoint(x: center.x + radius * cos(a),
                                          y: center.y + radius * sin(a))
                         var path = Path()
-                        path.move(to: p1); path.addLine(to: p2)
+                        path.move(to: p1)
+                        path.addLine(to: p2)
 
-                        ctx.stroke(path, with: .color(isDarkMode ? Color.white.opacity(0.9) : style.tickColor.opacity(0.9)), lineWidth: 2)
+                        ctx.stroke(path, with: .color(style.tickColor.opacity(1.0)), lineWidth: isMajor ? 3 : 2)
                     }
                         // Zeichnet große Ticks und Labels
                     let labelFont = Font.system(size: radius * 0.12, weight: .semibold, design: .rounded)
-                    for j in 0...totalMajor {
-                        let t = Double(j) / Double(totalMajor)
-                        let a = start + t * (end - start)
-                        let p1 = CGPoint(x: center.x + (radius - majTickLen) * cos(a),
-                                         y: center.y + (radius - majTickLen) * sin(a))
+
+                        // Zeichnet kleine und große Ticks sowie Labels
+                    for i in 0...totalMinor {
+                        let t = Double(i) / Double(totalMinor)
+                        let a = start + t * (end - start) // Winkel für den Tick
+                        let isMajor = (i % (totalMinor / totalMajor) == 0) // Prüft, ob es ein großer Tick ist
+
+                        let len = isMajor ? majTickLen : minTickLen
+                        let p1 = CGPoint(x: center.x + (radius - len) * cos(a),
+                                         y: center.y + (radius - len) * sin(a))
                         let p2 = CGPoint(x: center.x + radius * cos(a),
                                          y: center.y + radius * sin(a))
                         var path = Path()
-                        path.move(to: p1); path.addLine(to: p2)
-                        ctx.stroke(path, with: .color(isDarkMode ? Color.white.opacity(0.9) : Color.black.opacity(0.9)), lineWidth: 3)
+                        path.move(to: p1)
+                        path.addLine(to: p2)
 
-                            // Label für die großen Ticks
-                        let value = j * 20
-                        let labelR = radius - majTickLen - radius*0.12
-                        let lp = CGPoint(x: center.x + labelR * cos(a),
-                                         y: center.y + labelR * sin(a))
-                        let text = AttributedString(String(value), attributes: .init([
-                            .font: labelFont,
-                            .foregroundColor: isDarkMode ? Color.white : style.labelColor
-                        ]))
-                        ctx.draw(Text(text), at: lp, anchor: .center)
+                        ctx.stroke(path, with: .color(style.tickColor.opacity(1.0)), lineWidth: isMajor ? 3 : 2)
+
+                            // Zeichnet Labels nur für große Ticks
+                        if isMajor {
+                            let value = i * 10
+                            let labelR = radius - majTickLen - radius * 0.12
+                            let lp = CGPoint(x: center.x + labelR * cos(a),
+                                             y: center.y + labelR * sin(a))
+                            let text = AttributedString(String(value), attributes: .init([
+                                .font: labelFont,
+                                .foregroundColor: style.labelColor
+                            ]))
+                            ctx.draw(Text(text), at: lp, anchor: .center)
+                        }
                     }
                 }
                 .padding(style.canvasPadding)
+
                     // Digitale Geschwindigkeitsanzeige
                 VStack(spacing: 0) {
                     Text("\(Int(speed.rounded()))")
@@ -105,6 +118,7 @@ struct GaugeBase: View {
                         .padding(.top, -radius*0.08)
                 }
                 .offset(y: -radius * 0.35)
+
                     // Zeiger des Tachos
                 Needle(angle: angle(for: speed, maxSpeed: maxSpeed),
                        radius: radius,
@@ -162,49 +176,67 @@ struct Needle: Shape {
     /// Styling
 struct GaugeStyle {
     var backgroundFill: AnyShapeStyle {
-        AnyShapeStyle(isDarkMode ? Color.black : Color.white)
+        AnyShapeStyle(colorScheme == .dark ? Color.black : Color.white)
     }
     var outerStroke: Color {
-        isDarkMode ? Color.white.opacity(0.8) : Color.gray.opacity(0.8)
+        colorScheme == .dark ? Color.white.opacity(0.8) : Color.gray.opacity(0.8)
     }
     var tickColor: Color {
-        isDarkMode ? Color.white.opacity(0.9) : Color.gray.opacity(0.9)
+        colorScheme == .dark ? Color.white.opacity(0.9) : Color.gray.opacity(0.9)
     }
     var labelColor: Color {
-        isDarkMode ? Color.white : Color.primary
-    }
-    var subLabelColor: Color {
-        isDarkMode ? Color.gray : Color.secondary
+        colorScheme == .dark ? Color.white : Color.primary
     }
     var digitalForeground: any ShapeStyle {
-        isDarkMode ? Color.white : Color.primary
-    }
-    var hubFill: any ShapeStyle {
-        isDarkMode ? Color.black.opacity(0.8) : Color(UIColor.systemGray6)
+        colorScheme == .dark ? Color.white : Color.primary
     }
     var hubStroke: Color {
-        isDarkMode ? Color.white.opacity(0.6) : Color(UIColor.separator)
+        colorScheme == .dark ? Color.white.opacity(0.6) : Color(UIColor.separator)
     }
     var outerStrokeWidth: CGFloat = 2
     var outerGlow: CGFloat = 10
-    var digitalShadow: Color = Color(UIColor.systemGray)
-    var digitalShadowRadius: CGFloat = 8
     var needleFill: any ShapeStyle = LinearGradient(colors: [Color.yellow, Color.orange], startPoint: .top, endPoint: .bottom)
     var needleThickness: CGFloat = 7
     var hubSize: CGFloat = 22
     var needleShadow: CGFloat = 3
     var depthShadow: CGFloat = 8
     var canvasPadding: CGFloat = 10
+    var rings: AnyView = AnyView(EmptyView())
 
-    public var isDarkMode: Bool
+    var colorScheme: ColorScheme
 
-    init(isDarkMode: Bool) {
-        self.isDarkMode = isDarkMode
+    init(
+        colorScheme: ColorScheme,
+        rings: AnyView = AnyView(EmptyView()),
+        tickColor: Color = .gray,
+        labelColor: Color = .primary,
+        needleFill: any ShapeStyle = Color.red,
+        needleThickness: CGFloat = 7,
+        hubSize: CGFloat = 22,
+        hubStroke: Color = .gray,
+        outerStroke: Color = .gray,
+        outerStrokeWidth: CGFloat = 2,
+        outerGlow: CGFloat = 0,
+        depthShadow: CGFloat = 8,
+        canvasPadding: CGFloat = 10,
+        backgroundFill: AnyShapeStyle = AnyShapeStyle(Color.white),
+        digitalForeground: any ShapeStyle = Color.primary
+    ) {
+        self.colorScheme = colorScheme
+        self.rings = rings
+        self.needleFill = needleFill
+        self.needleThickness = needleThickness
+        self.hubSize = hubSize
+        self.outerStrokeWidth = outerStrokeWidth
+        self.outerGlow = outerGlow
+        self.depthShadow = depthShadow
+        self.canvasPadding = canvasPadding
     }
 }
 
     /// Timer
 struct TimerControlView: View {
+    @Environment(\.colorScheme) var colorScheme
     @Binding var remaining: Int
     @Binding var isRunning: Bool
     var elapsedTimes: [Int]
@@ -214,7 +246,6 @@ struct TimerControlView: View {
     var reset: () -> Void
     var saveElapsedTime: () -> Void
     var deleteElapsedTime: (Int) -> Void
-    var isDarkMode: Bool
 
     var body: some View {
         VStack(spacing: 10) {
@@ -222,17 +253,17 @@ struct TimerControlView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(5)
-                .foregroundColor(isDarkMode ? .white : .black)
+                .foregroundColor(colorScheme == .dark ? .white : .black)
             Text(String(format: "Entfernung: %.2f km", totalDistance))
                 .font(.headline)
-                .foregroundColor(isDarkMode ? .gray : .secondary)
+                .foregroundColor(colorScheme == .dark ? .white : .black)
             HStack(spacing: 20) {
                 Button(action: toggleStartPause) {
                     Text(isRunning ? "Pause" : "Start")
                         .font(.headline)
                         .padding(10)
                         .background(isRunning ? Color.red : Color.green)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.white)
                         .cornerRadius(10)
                 }
                 Button(action: reset) {
@@ -240,7 +271,7 @@ struct TimerControlView: View {
                         .font(.headline)
                         .padding(10)
                         .background(Color.blue)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.white)
                         .cornerRadius(10)
                 }
                 Button(action: saveElapsedTime) {
@@ -248,7 +279,7 @@ struct TimerControlView: View {
                         .font(.headline)
                         .padding(10)
                         .background(Color.orange)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.white)
                         .cornerRadius(10)
                 }
             }
@@ -284,7 +315,7 @@ struct TimerControlView: View {
                 }
             }
         }
-        .background(isDarkMode ? Color.black : Color(UIColor.systemGray6))
+        .background(colorScheme == .dark ? Color.black : Color(UIColor.systemGray6))
         .cornerRadius(15)
         .shadow(radius: 5)
     }
@@ -348,35 +379,20 @@ class TimerManager: ObservableObject {
     }
 }
 
-    /// Overlay mit einstellbarem Schattenwinkel
+    /// Overlay
 struct SpeedOverlay: View {
+    @Environment(\.colorScheme) var colorScheme
     var speed: Double
     var maxSpeed: Double = 200
-    var shadowAngle: Double
-    var isDarkMode: Bool
     var gaugeStyleType: String
 
     var body: some View {
         ZStack {
-            let startPoint = UnitPoint(
-                x: 0.5 + 0.5 * cos(shadowAngle * .pi / 180),
-                y: 0.5 + 0.5 * sin(shadowAngle * .pi / 180)
-            )
-            let endPoint = UnitPoint(
-                x: 0.5 - 0.5 * cos(shadowAngle * .pi / 180),
-                y: 0.5 - 0.5 * sin(shadowAngle * .pi / 180)
-            )
 
             GaugeBase(
                 speed: speed,
                 maxSpeed: maxSpeed,
-                style: createGaugeStyle(
-                    for: "overlay",
-                    startPoint: startPoint,
-                    endPoint: endPoint,
-                    isDarkMode: isDarkMode
-                ),
-                isDarkMode: isDarkMode
+                gaugeStyleType: gaugeStyleType
             )
         }
         .padding(8)
@@ -385,44 +401,35 @@ struct SpeedOverlay: View {
 }
 
     /// Funktion zur Erstellung eines gemeinsamen GaugeStyle
-func createGaugeStyle(for type: String = "default", isDarkMode: Bool = false) ->
-
- GaugeStyle {
-    let commonNeedleFill = LinearGradient(colors: [Color.yellow, Color.orange], startPoint: .top, endPoint: .bottom)
-     switch type {
-         case "overlay":
-             return GaugeStyle(isDarkMode: isDarkMode)
-         default:
-             return GaugeStyle(isDarkMode: isDarkMode)
-     }
-     /*
+func createGaugeStyle(for type: String = "default", colorScheme: ColorScheme) ->
+GaugeStyle {
     switch type {
         case "overlay":
+            let startPoint = UnitPoint(x: 0.0, y: 0.0)
+            let endPoint = UnitPoint(x: 1.0, y: 1.0)
             return GaugeStyle(
-                outerStroke: isDarkMode ? Color.white.opacity(0.9) : Color.gray.opacity(0.9),
-                outerStrokeWidth: 10,
-                outerGlow: 7,
+                colorScheme: colorScheme,
                 rings: AnyView(
                     ZStack {
                         Circle().inset(by: 14)
                             .trim(from: 0.17, to: 0.437)
-                            .stroke(Color.blue, style: StrokeStyle(lineWidth: 8, lineCap: .butt))
+                            .stroke(Color.blue, lineWidth: 8)
                             .rotationEffect(.degrees(89))
 
                         Circle().inset(by: 14)
                             .trim(from: 0.437, to: 0.567)
-                            .stroke(Color.green, style: StrokeStyle(lineWidth: 8, lineCap: .butt))
+                            .stroke(Color.green, lineWidth: 8)
                             .rotationEffect(.degrees(89))
 
                         Circle().inset(by: 14)
                             .trim(from: 0.567, to: 0.835)
-                            .stroke(Color.red, style: StrokeStyle(lineWidth: 8, lineCap: .butt))
+                            .stroke(Color.red, lineWidth: 8)
                             .rotationEffect(.degrees(89))
 
                         Circle().inset(by: -4)
                             .stroke(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color.white.opacity(0.9), Color.black.opacity(0.4)]),
+                                    gradient: Gradient(colors: [Color.white.opacity(0.8), Color.black.opacity(0.6)]),
                                     startPoint: startPoint,
                                     endPoint: endPoint
                                 ),
@@ -432,7 +439,7 @@ func createGaugeStyle(for type: String = "default", isDarkMode: Bool = false) ->
                         Circle().inset(by: 4)
                             .stroke(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color.white.opacity(0.8), Color.black.opacity(0.5)]),
+                                    gradient: Gradient(colors: [Color.white.opacity(0.8), Color.black.opacity(0.6)]),
                                     startPoint: endPoint,
                                     endPoint: startPoint
                                 ),
@@ -440,35 +447,60 @@ func createGaugeStyle(for type: String = "default", isDarkMode: Bool = false) ->
                             )
                     }
                 ),
-                tickColor: .white.opacity(0.85),
-                labelColor: .white.opacity(0.85),
-                subLabelColor: .white.opacity(0.6),
-                digitalShadow: Color.cyan.opacity(0.6),
-                digitalShadowRadius: CGFloat(8),
-                needleFill: commonNeedleFill,
-                needleThickness: 7,
-                hubFill: Color.black.opacity(0.8),
-                hubStroke: .white.opacity(0.6),
-                hubSize: 22,
-                needleShadow: 3,
-                depthShadow: 8,
-                canvasPadding: 10
+                tickColor: colorScheme == .dark ? Color.white.opacity(0.85) : Color.gray.opacity(0.85),
+                labelColor: colorScheme == .dark ? Color.white : Color.black,
+                needleFill: LinearGradient(
+                    colors: colorScheme == .dark ? [Color.white, Color.gray] : [Color.yellow, Color.orange],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
             )
-        default:
+
+            case "modern":
+                // Neues modernes Design
             return GaugeStyle(
-                outerStroke: isDarkMode ? Color.white.opacity(0.8) : Color.gray.opacity(0.8),
-                needleFill: commonNeedleFill
+                colorScheme: colorScheme,
+                rings: AnyView(
+                    ZStack {
+                        Circle().stroke(Color.gray, lineWidth: 2)
+                        Circle().inset(by: 10)
+                            .stroke(LinearGradient(
+                                gradient: Gradient(colors: [Color.green, Color.orange]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ), lineWidth: 4)
+                    }
+                ),
+                tickColor: Color.purple,
+                labelColor: Color.orange,
+                needleFill: LinearGradient(
+                    colors: [Color.pink, Color.orange],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
             )
+
+        case "minimal":
+                // Neues minimalistisches Design
+            return GaugeStyle(
+                colorScheme: colorScheme,
+                rings: AnyView(EmptyView()),
+                tickColor: Color.gray,
+                labelColor: Color.primary,
+                needleFill: Color.blue
+            )
+
+
+        default:
+            return GaugeStyle(colorScheme: colorScheme)
     }
- */
 }
 
 
     /// Hauptansicht für diese Seite!
 struct MainView: View {
-    @AppStorage("isDarkMode") private var isDarkMode: Bool = false
+    @Environment(\.colorScheme) private var colorScheme
     @State private var speed: Double = 50
-    @State private var shadowAngle: Double = 240.0
     @State private var sessionActive = false
     @State private var sessionTicker: Timer? = nil
     @State private var sessionSeconds: Int = 0
@@ -479,16 +511,13 @@ struct MainView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                (isDarkMode ? Color.black : Color.white)
+                (colorScheme == .dark ? Color.black : Color.white)
                     .edgesIgnoringSafeArea(.all)
-
                 ScrollView () {
                     VStack(spacing: 14) {
                         SpeedOverlay(
                             speed: speed,
-                            maxSpeed: 200,
-                            shadowAngle: shadowAngle,
-                            isDarkMode: isDarkMode,
+                            maxSpeed: maxSpeed,
                             gaugeStyleType: gaugeStyleType
                         )
                         .frame(width: min(geometry.size.width, geometry.size.height) * 0.9,
@@ -506,55 +535,70 @@ struct MainView: View {
                             toggleStartPause: toggleCountdown,
                             reset: sessionTimer.resetTimer,
                             saveElapsedTime: sessionTimer.saveElapsedTime,
-                            deleteElapsedTime: sessionTimer.deleteElapsedTime,
-                            isDarkMode: isDarkMode
+                            deleteElapsedTime: sessionTimer.deleteElapsedTime
                         )
 
                         Text("Speed: \(Int(speed)) km/h")
                             .font(.headline)
-                            .foregroundColor(isDarkMode ? .white : .black)
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
                         Slider(value: $speed, in: 0...maxSpeed, step: 1, onEditingChanged: { _ in
                             sessionTimer.updateSpeed(speed)
                         })
                         .accentColor(.blue)
 
-                        Text("Shadow Angle: \(Int(shadowAngle))°")
-                            .font(.headline)
-                            .foregroundColor(isDarkMode ? .white : .black)
-                        Slider(value: $shadowAngle, in: 0.0...360.0, step: 1.0)
-                            .accentColor(.green)
-
                         HStack {
                             Button(action: {
-                                isDarkMode.toggle()
+                                gaugeStyleType = "default"
                             }) {
-                                Text(isDarkMode ? "Dark" : "Light")
+                                Text("Standard")
                                     .font(.headline)
                                     .padding(10)
-                                    .background(Color.blue)
+                                    .background(gaugeStyleType == "default" ? Color.blue : Color.gray)
                                     .foregroundColor(.white)
                                     .cornerRadius(10)
-
-                                Spacer()
-
-                                Button(action: {
-                                    gaugeStyleType = (gaugeStyleType == "default") ? "overlay" : "default"
-                                }) {
-                                    Text(gaugeStyleType == "default" ? "Overlay" : "Default")
-                                        .font(.headline)
-                                        .padding(10)
-                                        .background(Color.blue)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(10)
-                                }
                             }
-                            .padding(.horizontal, 20)
+
+                            Button(action: {
+                                gaugeStyleType = "overlay"
+                            }) {
+                                Text("Overlay")
+                                    .font(.headline)
+                                    .padding(10)
+                                    .background(gaugeStyleType == "overlay" ? Color.blue : Color.gray)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
+
+                            Button(action: {
+                                gaugeStyleType = "modern"
+                            }) {
+                                Text("Modern")
+                                    .font(.headline)
+                                    .padding(10)
+                                    .background(gaugeStyleType == "modern" ? Color.blue : Color.gray)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
+
+                            Button(action: {
+                                gaugeStyleType = "minimal"
+                            }) {
+                                Text("Minimal")
+                                    .font(.headline)
+                                    .padding(10)
+                                    .background(gaugeStyleType == "minimal" ? Color.blue : Color.gray)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
                         }
+                        .padding(.horizontal, 20)
                     }
                 }
             }
         }
+        .preferredColorScheme(colorScheme)
     }
+
 
     private func toggleCountdown() {
         if sessionTimer.isRunning {
