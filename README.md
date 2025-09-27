@@ -6,7 +6,7 @@
 
 ---
 
-## Main Features
+## Main Features 
 
 ### 1. **Timer Control**
 - Start, pause, and reset the timer.
