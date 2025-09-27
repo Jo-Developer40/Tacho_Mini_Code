@@ -1,9 +1,15 @@
-    //
-    //  GaugeView.swift
-    //  Tacho_Mini
-    //
-    //  Created by Juergen on 26.09.25.
-    //
+//
+//  GaugeView.swift
+//  Tacho_Mini
+//
+//  Created by Juergen on 26.09.25
+//
+/// Verwendung:
+/// GaugeBase(speed: 50, maxSpeed: 200, gaugeStyleType: "overlay")
+/// var speed: Double // Aktuelle Geschwindigkeit
+/// var maxSpeed: Double // Maximale Geschwindigkeit
+/// var gaugeStyleType: String // Typ des GaugeStyles
+/// "overlay", "modern" oder "minimal" (Standard ist "default")
 
 import SwiftUI
 
@@ -298,4 +304,22 @@ struct GaugeStyle {
         self.depthShadow = depthShadow
         self.canvasPadding = canvasPadding
     }
+}
+
+    /// Hauptansicht des Tachos
+#Preview("overlay") {
+    GaugeBase(speed: 50, maxSpeed: 200, gaugeStyleType: "overlay")
+        .scaleEffect(0.8)
+}
+#Preview("stardard") {
+    GaugeBase(speed: 50, maxSpeed: 200, gaugeStyleType: "stardard")
+        .scaleEffect(0.8)
+}
+#Preview("modern") {
+    GaugeBase(speed: 50, maxSpeed: 200, gaugeStyleType: "modern")
+        .scaleEffect(0.8)
+}
+#Preview("default") {
+    GaugeBase(speed: 50, maxSpeed: 200, gaugeStyleType: "default")
+        .scaleEffect(0.8)
 }

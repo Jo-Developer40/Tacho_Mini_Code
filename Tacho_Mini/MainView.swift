@@ -173,9 +173,6 @@ struct SpeedOverlay: View {
     }
 }
 
-
-
-
     /// Hauptansicht für diese Seite!
 struct MainView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -270,8 +267,9 @@ struct MainView: View {
                                     .cornerRadius(10)
                             }
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.vertical, 50)
                     }
+                    .padding(.horizontal, 20)
                 }
             }
         }
