@@ -4,7 +4,9 @@
 ## Overview
 **Tacho Mini** is a SwiftUI application that provides timer and speed monitoring functionality. The app allows users to track their speed, distance traveled, and lap times. It features an interactive user interface with various controls and a customizable speed display style.
 
----
+## Preview
+<img src="TachoMini/docs.docc/Resources/Screenshot-Standard-Dark.png" width="300"/>
+
 
 ## Main Features
 
@@ -26,13 +28,6 @@
   - Minimal
   
 
----
-
-## Screenshots
-
-![MainView]([Resources/img_1131.png](https://github.com/Jo-Developer40/SystemSoundsPlay/tree/main/Resources#:~:text=img_1131.PNG))
-
----
 
 ## Requirements
 - **Platform**: iOS 16.0 or later
@@ -49,7 +44,7 @@ This project is licensed under the Apache License. For more information, see the
 ## Übersicht
 **Tacho Mini** ist eine SwiftUI-Anwendung, die eine Timer- und Geschwindigkeitsüberwachungsfunktionalität bietet. Die App ermöglicht es Benutzern, ihre Geschwindigkeit, zurückgelegte Entfernungen und Rundenzeiten zu verfolgen. Sie enthält eine interaktive Benutzeroberfläche mit verschiedenen Steuerelementen und einem anpassbaren Geschwindigkeitsanzeige-Stil.
 
----
+
 
 ## Hauptfunktionen
 
@@ -70,14 +65,14 @@ This project is licensed under the Apache License. For more information, see the
   - Modern
   - Minimal
   
----
+
 
 ## Anforderungen
 - **Plattform**: iOS 16.0 oder höher
 - **Frameworks**: SwiftUI, AudioToolbox, Combine
 - **Xcode-Version**: 14.0 oder höher
 
----
+
 
 ## Lizenz
 Dieses Projekt steht unter der Apache License. Weitere Informationen findest du in der Datei `LICENSE`.
