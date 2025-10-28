@@ -29,7 +29,7 @@
 
 ## Screenshots
 
-<img src="Tacho_Mini/Resources/Screenshot-Overlay-Dark.png" width="200" height="200"/>
+<img src="Tacho_Mini/Resources/Screenshot-Overlay-Dark.png" width="200"/>
 
 ---
 
